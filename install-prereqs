@@ -1,0 +1,57 @@
+#! /bin/sh
+
+if which yum > /dev/null 2>&1; then
+    sudo yum install -y java-1.8.0-openjdk-devel || exit $?
+elif which apt > /dev/null 2>&1; then
+    sudo apt install -y openjdk-8-jdk || exit $?
+elif which javac; then
+    :
+else
+    echo 'Cannot find jdk; please install openjdk version 8' >&2
+    exit 1
+fi
+
+PATH_CMDS=''
+
+add_to_path() {
+    PATH_CMD="PATH=$1:\$PATH"
+    sed -i "1i $PATH_CMD" $HOME/.bashrc
+    eval $PATH_CMD
+    PATH_CMDS=$PATH_CMDS'    '$PATH_CMD'
+'
+}
+
+MAVEN_VERSION=3.5.4
+
+if ! [ -d $HOME/sys/apache-maven-$MAVEN_VERSION ]; then
+    mkdir -p $HOME/sys || exit $?
+    pushd $HOME/sys || exit $?
+    wget -q -O apache-maven-$MAVEN_VERSION-bin.tar.gz http://apache.claz.org/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz || exit $?
+    tar -xzf apache-maven-$MAVEN_VERSION-bin.tar.gz
+    add_to_path $HOME/sys/apache-maven-$MAVEN_VERSION/bin
+    popd
+fi
+
+NODE_VERSION=12.16.1
+
+if ! [ -d $HOME/sys/node-v$NODE_VERSION-linux-x64 ]; then
+    mkdir -p $HOME/sys || exit $?
+    pushd $HOME/sys || exit $?
+    wget -q -O node-v$NODE_VERSION-linux-x64.tar.xz https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz || exit $?
+    tar -xJf node-v$NODE_VERSION-linux-x64.tar.xz || exit $?
+    add_to_path $HOME/sys/node-v$NODE_VERSION-linux-x64/bin
+    popd
+fi
+
+if ! npm list -g @angular/cli > /dev/null 2>&1; then
+    npm install -g @angular/cli || exit $?
+fi
+
+mvn install || exit $?
+
+npm install || exit $?
+
+if [ -n "$PATH_CMDS" ]; then
+    echo Run "
+$PATH_CMDS"to use the installed maven and node in this terminal, or open a new terminal window
+fi
