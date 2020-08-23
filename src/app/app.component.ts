@@ -15,5 +15,6 @@ export class AppComponent {
     get userName() { return this.app?.user?.name }
 
     logout() {
+        this.app.logout();
     }
 }
